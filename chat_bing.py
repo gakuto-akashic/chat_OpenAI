@@ -73,6 +73,25 @@ def cognitive_search(search_text: str) -> str:
         output += str(result) + "\n"
     return output
 
+# オプション
+def select_model():
+    model = st.sidebar.radio("Choose a model:", ("GPT-3.5", "GPT-4"))
+    if model == "GPT-3.5":
+        model_name = os.getenv("OPENAI_API_MODEL_DEPROY")
+    else:
+        model_name = os.getenv("OPENAI_API_MODEL_DEPROY_4")
+        
+    temperature = st.sidebar.slider("Temperature:", min_value=0.0, max_value=1.5, value=0.7, step=0.1)    
+
+    return AzureChatOpenAI(
+        openai_api_base = os.getenv("OPENAI_API_BASE"),
+        openai_api_version = os.getenv("OPENAI_API_VERSION"),
+        deployment_name = model_name,
+        openai_api_key = os.getenv("OPENAI_API_KEY"),
+        openai_api_type = os.getenv("OPENAI_API_TYPE"),
+        temperature=temperature,
+    )
+
 # クリアボタン
 def init_messages():
     clear_button = st.sidebar.button("Clear Conversation", key="clear")
@@ -90,15 +109,12 @@ def escape_markdown(text):
     return text
 
 # アプリ全体        
-def main():   
+def main():  
+    # クリアボタンの追加
+    init_messages()
+     
     # ChatGPT-3.5のモデルのインスタンスの作成
-    chat = AzureChatOpenAI(
-        openai_api_base = os.getenv("OPENAI_API_BASE"),
-        openai_api_version = os.getenv("OPENAI_API_VERSION"),
-        deployment_name = os.getenv("OPENAI_API_MODEL_DEPROY"),
-        openai_api_key = os.getenv("OPENAI_API_KEY"),
-        openai_api_type = os.getenv("OPENAI_API_TYPE"),
-    )
+    chat = select_model()
 
     # bingエンジンを使えるようにtoolsを定義（有料のため現在コメントアウト）
     #BING_SUBSCRIPTION_KEY = os.getenv("BING_SUBSCRIPTION_KEY")
@@ -135,6 +151,8 @@ def main():
     system_message = """
     You are an Informatica expert and engineer.
     
+    If the value of "Observation" is "Invalid or incomplete response" more than 4 times, output "回答を生成できませんでした".
+    
     Answer the following questions as best you can, but speaking Japanese.
     """
 
@@ -152,9 +170,6 @@ def main():
     # Streamlitによって、タイトル部分のUIをの作成
     st.title("Chatbot with OpenAI")
     st.caption("testのチャットです")
-    
-    # クリアボタンの追加
-    init_messages()
         
     # チャット履歴（HumanMessageやAIMessageなど）を格納する配列の初期化
     chat_history = []
